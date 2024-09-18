@@ -1,0 +1,19 @@
+[package]
+name = "seq-hasher"
+version = "0.1.0"
+authors = [ "Antonio Camargo" ]
+edition = "2021"
+description = "Compute hash digests for sequences in a FASTA file"
+readme = "README.md"
+homepage = "https://github.com/apcamargo/seq-hasher"
+repository = "https://github.com/apcamargo/seq-hasher"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.5.17", features = ["wrap_help"] }
+clio = { version = "0.3.5", features = ["clap-parse"] }
+hex = "0.4.3"
+itertools = "0.13.0"
+needletail = "0.5.1"
+nthash = "0.5.1"
+twox-hash = "1.6.3"
