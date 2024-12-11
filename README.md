@@ -83,7 +83,7 @@ seq_a	790418b4049777375089c2537f77074a
 seq_d	790418b4049777375089c2537f77074a
 ```
 
-Compressed FASTA files in the `.gz`, `.bz2`, and `.xz` formats are supported.
+Compressed FASTA files in the `.gz`, `.bz2`, `.xz`, and `.zst` formats are supported.
 
 ```
 $ curl -sfSLJ https://www.ebi.ac.uk/ena/browser/api/fasta/CP108542,AP024942 | \
