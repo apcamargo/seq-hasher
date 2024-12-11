@@ -1,13 +1,18 @@
 use crate::hashing::SequenceHasher;
 use crate::sequence::{get_record_accession, SequenceProcessor};
-use needletail::{parse_fastx_file, parse_fastx_stdin};
+use needletail::{parse_fastx_file, parse_fastx_stdin, Sequence};
 use std::io::{self, Write};
 use std::process;
 use std::str;
 
 use clio::Input;
 
-pub fn pipeline(input: &Input, hasher: &SequenceHasher, sequence_processor: &SequenceProcessor) {
+pub fn pipeline(
+    input: &Input,
+    hasher: &SequenceHasher,
+    sequence_processor: &SequenceProcessor,
+    print_sequence: bool,
+) {
     let reader = match input.is_std() {
         true => parse_fastx_stdin(),
         false => {
@@ -75,12 +80,21 @@ pub fn pipeline(input: &Input, hasher: &SequenceHasher, sequence_processor: &Seq
             }
         };
 
-        // Print the record accession and the hash of the sequence
-        let output = format!(
-            "{}\t{}\n",
-            str::from_utf8(accession).unwrap_or("'NA'"),
-            hex::encode(hash_seq.to_be_bytes())
-        );
+        // Print the record accession and the hash of the sequence. If `print_sequence` is
+        // true, also print the sequence.
+        let output = match print_sequence {
+            true => format!(
+                "{}\t{}\t{}\n",
+                str::from_utf8(accession).unwrap_or("'NA'"),
+                hex::encode(hash_seq.to_be_bytes()),
+                str::from_utf8(processed_seq.sequence()).unwrap_or("")
+            ),
+            _ => format!(
+                "{}\t{}\n",
+                str::from_utf8(accession).unwrap_or("'NA'"),
+                hex::encode(hash_seq.to_be_bytes())
+            ),
+        };
 
         // Write to stdout and handle potential errors
         if let Err(e) = io::stdout().write_all(output.as_bytes()) {

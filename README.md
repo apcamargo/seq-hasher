@@ -21,6 +21,12 @@ seq-hasher [OPTIONS] [INPUT]...
 | `-h`, `--help` | Print help |
 | `-V`, `--version` | Print version |
 
+### Output
+
+| Option | Description |
+|:-------|:------------|
+| `-s`, `--print-sequence` | Print sequences in a third column |
+
 ### Hashing
 
 | Option | Description |
@@ -81,6 +87,18 @@ $ echo -e ">seq_a\nCGAAACGTTCTT\n>seq_d\nGTTCTTCGAAAC" | \
 ```
 seq_a	790418b4049777375089c2537f77074a
 seq_d	790418b4049777375089c2537f77074a
+```
+
+You can print the sequences in a third column using the `--print-sequence/-s` option.
+
+```
+$ echo -e ">seq_a\nCGAAACGTTCTT\n>seq_d\nGTTCTTCGAAAC" | \
+  seq-hasher -s
+```
+
+```
+seq_a	8142a4bc45a6db851be0157ffafaaa68	AAGAACGTTTCG
+seq_d	b3c4b8bcd66e6b51e237b2c40905dfb6	GTTCTTCGAAAC
 ```
 
 Compressed FASTA files in the `.gz`, `.bz2`, `.xz`, and `.zst` formats are supported.

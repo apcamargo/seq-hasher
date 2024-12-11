@@ -16,6 +16,16 @@ struct Cli {
     #[clap(value_parser, default_value = "-")]
     input: Vec<Input>,
 
+    /// Print sequences in a third column
+    #[clap(
+        short = 's',
+        long,
+        value_parser,
+        default_value = "false",
+        help_heading = "Output"
+    )]
+    print_sequence: bool,
+
     /// Instead of hashing the entire sequence at once, hash each k-mer
     /// individually and then combine the resulting hashes
     #[clap(
@@ -80,6 +90,7 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
+    let print_sequence = cli.print_sequence;
     let multi_kmer_hashing = cli.multi_kmer_hashing;
     let use_xxhash = cli.xxhash;
     let k: u8 = cli.k;
@@ -90,6 +101,6 @@ fn main() {
     let hasher = SequenceHasher::new(multi_kmer_hashing, use_xxhash, k);
 
     for input in cli.input {
-        pipeline(&input, &hasher, &sequence_processor);
+        pipeline(&input, &hasher, &sequence_processor, print_sequence);
     }
 }
