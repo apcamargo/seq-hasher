@@ -13,36 +13,23 @@ use clio::Input;
 #[command(version, about, max_term_width = 79)]
 struct Cli {
     /// Input file(s). Use '-' for stdin
-    #[clap(value_parser, default_value = "-")]
+    #[arg(default_value = "-")]
     input: Vec<Input>,
 
     /// Print sequences in a third column
-    #[clap(
-        short = 's',
-        long,
-        value_parser,
-        default_value = "false",
-        help_heading = "Output"
-    )]
+    #[arg(short = 's', long, default_value = "false", help_heading = "Output")]
     print_sequence: bool,
 
     /// Instead of hashing the entire sequence at once, hash each k-mer
     /// individually and then combine the resulting hashes
-    #[clap(
-        short = 'm',
-        long,
-        value_parser,
-        default_value = "false",
-        help_heading = "Hashing"
-    )]
+    #[arg(short = 'm', long, default_value = "false", help_heading = "Hashing")]
     multi_kmer_hashing: bool,
 
     /// Replace ntHash with xxHash for hashing k-mers. Works only with
     /// --multi-kmer-hashing
-    #[clap(
+    #[arg(
         short = 'x',
         long,
-        value_parser,
         requires = "multi_kmer_hashing",
         default_value = "false",
         help_heading = "Hashing"
@@ -50,10 +37,9 @@ struct Cli {
     xxhash: bool,
 
     /// Size of the k-mers to hash when using --multi-kmer-hashing
-    #[clap(
+    #[arg(
         short = 'k',
         long = "kmer-size",
-        value_parser,
         requires = "multi_kmer_hashing",
         default_value = "31",
         help_heading = "Hashing"
@@ -62,10 +48,9 @@ struct Cli {
 
     /// Make hashing robust to circular permutations via deterministic rotation
     /// to the lexicographically minimal sequence
-    #[clap(
+    #[arg(
         short = 'r',
         long,
-        value_parser,
         default_value = "false",
         conflicts_with = "circular_kmers",
         help_heading = "Circular sequences"
@@ -75,10 +60,9 @@ struct Cli {
     /// Make hashing robust to circular permutations via addition of the
     /// k-mers that wrap around the end of the sequence. Works only with
     /// --multi-kmer-hashing
-    #[clap(
+    #[arg(
         short = 'w',
         long,
-        value_parser,
         default_value = "false",
         requires = "multi_kmer_hashing",
         conflicts_with_all = ["circular_rotation"],
