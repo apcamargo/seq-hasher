@@ -3,13 +3,15 @@ mod pipeline;
 mod sequence;
 
 use crate::hashing::SequenceHasher;
-use crate::pipeline::pipeline;
+use crate::pipeline::{create_fasta_reader, pipeline};
 use crate::sequence::SequenceProcessor;
 use clap::{
     builder::styling::{AnsiColor, Style, Styles},
-    Parser,
+    CommandFactory, Parser,
 };
 use clio::Input;
+use std::io::{self, IsTerminal};
+use std::process;
 
 const STYLES: Styles = Styles::styled()
     .header(AnsiColor::Cyan.on_default().bold())
@@ -83,17 +85,38 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
-    let print_sequence = cli.print_sequence;
-    let multi_kmer_hashing = cli.multi_kmer_hashing;
-    let use_xxhash = cli.xxhash;
-    let k: u8 = cli.k;
-    let circular_rotation = cli.circular_rotation;
-    let circular_kmers = cli.circular_kmers;
+    let sequence_processor =
+        SequenceProcessor::new(cli.circular_rotation, cli.circular_kmers, cli.k);
+    let hasher = SequenceHasher::new(cli.multi_kmer_hashing, cli.xxhash, cli.k);
 
-    let sequence_processor = SequenceProcessor::new(circular_rotation, circular_kmers, k);
-    let hasher = SequenceHasher::new(multi_kmer_hashing, use_xxhash, k);
+    // If it's an interactive session with no data piped to stdin and files provided,
+    // show help and exit
+    if cli.input.len() == 1 && cli.input[0].is_std() && io::stdin().is_terminal() {
+        Cli::command().print_help().unwrap();
+        process::exit(0);
+    }
 
-    for input in cli.input {
-        pipeline(&input, &hasher, &sequence_processor, print_sequence);
+    for input in &cli.input {
+        let reader = match create_fasta_reader(input) {
+            Ok(reader) => reader,
+            Err(error_msg) => {
+                if input.is_std() {
+                    // If stdin is invalid and it's the only input, show help and exit
+                    if cli.input.len() == 1 {
+                        Cli::command().print_help().unwrap();
+                        process::exit(0);
+                    }
+                    // If stdin is invalid but there are other inputs, skip it
+                    continue;
+                }
+                // If the error is from a file input, report and exit
+                eprintln!(
+                    "Error: failed to create reader for {}: {}",
+                    input, error_msg
+                );
+                process::exit(1);
+            }
+        };
+        pipeline(reader, &hasher, &sequence_processor, cli.print_sequence);
     }
 }

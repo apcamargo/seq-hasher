@@ -1,37 +1,35 @@
 use crate::hashing::SequenceHasher;
 use crate::sequence::{get_record_accession, SequenceProcessor};
-use needletail::{parse_fastx_file, parse_fastx_stdin, Sequence};
+use needletail::{parse_fastx_file, parse_fastx_stdin, parser::FastxReader, Sequence};
 use std::io::{self, Write};
 use std::process;
 use std::str;
 
 use clio::Input;
 
-pub fn pipeline(
-    input: &Input,
-    hasher: &SequenceHasher,
-    sequence_processor: &SequenceProcessor,
-    print_sequence: bool,
-) {
-    let reader = match input.is_std() {
+pub fn create_fasta_reader(input: &Input) -> Result<Box<dyn FastxReader>, String> {
+    let reader_result = match input.is_std() {
         true => parse_fastx_stdin(),
         false => {
             if input.is_empty().unwrap() {
-                eprintln!("Error: the input file is empty");
-                process::exit(1);
+                return Err("the input file is empty".to_string());
             }
             parse_fastx_file(input.path().to_path_buf())
         }
     };
 
-    let mut reader = match reader {
-        Ok(reader) => reader,
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            process::exit(1);
-        }
-    };
+    match reader_result {
+        Ok(reader) => Ok(reader),
+        Err(e) => Err(format!("{}", e)),
+    }
+}
 
+pub fn pipeline(
+    mut reader: Box<dyn FastxReader>,
+    hasher: &SequenceHasher,
+    sequence_processor: &SequenceProcessor,
+    print_sequence: bool,
+) {
     // Iterate over the sequence records
     while let Some(record) = reader.next() {
         let record = match record {
