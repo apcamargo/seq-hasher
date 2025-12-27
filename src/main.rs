@@ -5,12 +5,21 @@ mod sequence;
 use crate::hashing::SequenceHasher;
 use crate::pipeline::pipeline;
 use crate::sequence::SequenceProcessor;
-use clap::Parser;
+use clap::{
+    builder::styling::{AnsiColor, Style, Styles},
+    Parser,
+};
 use clio::Input;
+
+const STYLES: Styles = Styles::styled()
+    .header(AnsiColor::Cyan.on_default().bold())
+    .usage(AnsiColor::Yellow.on_default().bold())
+    .literal(AnsiColor::Yellow.on_default().bold())
+    .placeholder(Style::new().dimmed());
 
 /// Compute hash digests for sequences in a FASTA file
 #[derive(Parser)]
-#[command(version, about, max_term_width = 79)]
+#[command(version, about, max_term_width = 79, styles = STYLES)]
 struct Cli {
     /// Input file(s). Use '-' for stdin
     #[arg(default_value = "-")]
