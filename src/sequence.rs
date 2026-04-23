@@ -1,4 +1,5 @@
 use needletail::{parser::SequenceRecord, Sequence};
+use std::num::NonZeroU8;
 
 pub fn get_record_accession(record_header: &[u8]) -> Option<&[u8]> {
     let accession = record_header
@@ -13,11 +14,11 @@ pub fn get_record_accession(record_header: &[u8]) -> Option<&[u8]> {
 pub struct SequenceProcessor {
     pub circular_rotation: bool,
     pub circular_kmers: bool,
-    pub k: u8,
+    pub k: NonZeroU8,
 }
 
 impl SequenceProcessor {
-    pub fn new(circular_rotation: bool, circular_kmers: bool, k: u8) -> Self {
+    pub fn new(circular_rotation: bool, circular_kmers: bool, k: NonZeroU8) -> Self {
         SequenceProcessor {
             circular_rotation,
             circular_kmers,
@@ -42,9 +43,10 @@ impl SequenceProcessor {
     }
 
     fn adjust_for_circular_kmers(&self, seq: &[u8]) -> Vec<u8> {
-        let mut adjusted_seq = Vec::with_capacity(seq.len() + self.k as usize - 1);
+        let wrap_len = usize::from(self.k.get()) - 1;
+        let mut adjusted_seq = Vec::with_capacity(seq.len() + wrap_len);
         adjusted_seq.extend_from_slice(seq);
-        adjusted_seq.extend_from_slice(&seq[..(self.k as usize - 1)]);
+        adjusted_seq.extend_from_slice(&seq[..wrap_len]);
         adjusted_seq
     }
 

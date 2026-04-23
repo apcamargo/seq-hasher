@@ -3,6 +3,7 @@ use needletail::Sequence;
 use nthash::NtHashIterator;
 use std::error::Error;
 use std::iter::Iterator;
+use std::num::NonZeroU8;
 use std::{fmt, hash::Hasher};
 use twox_hash::xxh3::{hash64, Hash128, HasherExt};
 
@@ -35,19 +36,19 @@ impl fmt::Display for KmerHasherError {
 impl From<String> for KmerHasherError {
     fn from(err: String) -> Self {
         KmerHasherError {
-            source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, err)),
+            source: Box::new(std::io::Error::other(err)),
         }
     }
 }
 
 struct KmerHashIterator<'a> {
     seq: &'a [u8],
-    k: u8,
+    k: NonZeroU8,
     use_xxhash: bool,
 }
 
 impl<'a> KmerHashIterator<'a> {
-    fn new(seq: &'a [u8], k: u8, use_xxhash: bool) -> Self {
+    fn new(seq: &'a [u8], k: NonZeroU8, use_xxhash: bool) -> Self {
         KmerHashIterator { seq, k, use_xxhash }
     }
 
@@ -67,7 +68,7 @@ impl<'a> KmerHashIterator<'a> {
     }
 
     fn produce_nthash_iterator(&self) -> Result<KmerHasher<'a>, String> {
-        match NtHashIterator::new(self.seq, self.k as usize) {
+        match NtHashIterator::new(self.seq, usize::from(self.k.get())) {
             Ok(iter) => Ok(KmerHasher::NtHash(iter)),
             Err(e) => Err(format!("Error: {}", e))?,
         }
@@ -76,7 +77,7 @@ impl<'a> KmerHashIterator<'a> {
     fn produce_xxhash_iterator(&self, rc: &'a [u8]) -> Result<KmerHasher<'a>, String> {
         let iter = self
             .seq
-            .canonical_kmers(self.k, rc)
+            .canonical_kmers(self.k.get(), rc)
             .map(|(_, kmer, _)| kmer)
             .map(hash64);
         Ok(KmerHasher::XxHash(Box::new(iter)))
@@ -86,11 +87,11 @@ impl<'a> KmerHashIterator<'a> {
 pub struct SequenceHasher {
     pub multi_kmer_hashing: bool,
     pub use_xxhash: bool,
-    pub k: u8,
+    pub k: NonZeroU8,
 }
 
 impl SequenceHasher {
-    pub fn new(multi_kmer_hashing: bool, use_xxhash: bool, k: u8) -> Self {
+    pub fn new(multi_kmer_hashing: bool, use_xxhash: bool, k: NonZeroU8) -> Self {
         SequenceHasher {
             multi_kmer_hashing,
             use_xxhash,
@@ -105,7 +106,7 @@ impl SequenceHasher {
         }
     }
 
-    fn compute_sequence_hash_multi_kmer(&self, seq: &[u8], k: u8) -> Result<u128, String> {
+    fn compute_sequence_hash_multi_kmer(&self, seq: &[u8], k: NonZeroU8) -> Result<u128, String> {
         // Get the hashes of the k-mers in the sequence using either xxhash or nthash
         let kmer_hash_iterator = KmerHashIterator::new(seq, k, self.use_xxhash);
         let kmer_hashes = match kmer_hash_iterator.get_kmer_hashes() {

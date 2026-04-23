@@ -11,6 +11,7 @@ use clap::{
 };
 use clio::Input;
 use std::io::{self, IsTerminal};
+use std::num::NonZeroU8;
 use std::process;
 
 const STYLES: Styles = Styles::styled()
@@ -55,7 +56,7 @@ struct Cli {
         default_value = "31",
         help_heading = "Hashing"
     )]
-    k: u8,
+    k: NonZeroU8,
 
     /// Make hashing robust to circular permutations via deterministic rotation
     /// to the lexicographically minimal sequence

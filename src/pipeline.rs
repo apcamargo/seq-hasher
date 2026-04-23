@@ -51,7 +51,7 @@ pub fn pipeline(
         };
 
         // Check if the record is shorter than the k-mer size
-        if hasher.multi_kmer_hashing && record.num_bases() < hasher.k as usize {
+        if hasher.multi_kmer_hashing && record.num_bases() < usize::from(hasher.k.get()) {
             eprintln!(
                 "Error: record {} is shorter than the k-mer size",
                 str::from_utf8(accession).unwrap_or("'NA'")
