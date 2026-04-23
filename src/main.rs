@@ -85,6 +85,7 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
+    let input_count = cli.input.len();
 
     let sequence_processor =
         SequenceProcessor::new(cli.circular_rotation, cli.circular_kmers, cli.k);
@@ -92,18 +93,21 @@ fn main() {
 
     // If it's an interactive session with no data piped to stdin and files provided,
     // show help and exit
-    if cli.input.len() == 1 && cli.input[0].is_std() && io::stdin().is_terminal() {
+    if input_count == 1 && cli.input[0].is_std() && io::stdin().is_terminal() {
         Cli::command().print_help().unwrap();
         process::exit(0);
     }
 
-    for input in &cli.input {
+    for input in cli.input {
+        let is_std = input.is_std();
+        let input_display = input.to_string();
+
         let reader = match create_fasta_reader(input) {
             Ok(reader) => reader,
             Err(error_msg) => {
-                if input.is_std() {
+                if is_std {
                     // If stdin is invalid and it's the only input, show help and exit
-                    if cli.input.len() == 1 {
+                    if input_count == 1 {
                         Cli::command().print_help().unwrap();
                         process::exit(0);
                     }
@@ -113,7 +117,7 @@ fn main() {
                 // If the error is from a file input, report and exit
                 eprintln!(
                     "Error: failed to create reader for {}: {}",
-                    input, error_msg
+                    input_display, error_msg
                 );
                 process::exit(1);
             }

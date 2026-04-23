@@ -1,27 +1,14 @@
 use crate::hashing::SequenceHasher;
 use crate::sequence::{get_record_accession, SequenceProcessor};
-use needletail::{parse_fastx_file, parse_fastx_stdin, parser::FastxReader, Sequence};
+use needletail::{parse_fastx_reader, parser::FastxReader, Sequence};
 use std::io::{self, Write};
 use std::process;
 use std::str;
 
 use clio::Input;
 
-pub fn create_fasta_reader(input: &Input) -> Result<Box<dyn FastxReader>, String> {
-    let reader_result = match input.is_std() {
-        true => parse_fastx_stdin(),
-        false => {
-            if input.is_empty().unwrap() {
-                return Err("the input file is empty".to_string());
-            }
-            parse_fastx_file(input.path().to_path_buf())
-        }
-    };
-
-    match reader_result {
-        Ok(reader) => Ok(reader),
-        Err(e) => Err(format!("{}", e)),
-    }
+pub fn create_fasta_reader(input: Input) -> Result<Box<dyn FastxReader>, String> {
+    parse_fastx_reader(input).map_err(|e| e.to_string())
 }
 
 pub fn pipeline(
