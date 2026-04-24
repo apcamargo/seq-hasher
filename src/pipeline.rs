@@ -10,9 +10,6 @@ use clio::Input;
 const HEX_DIGITS: &[u8; 16] = b"0123456789abcdef";
 
 pub fn create_fasta_reader(input: Input) -> Result<Box<dyn FastxReader>, String> {
-    if input.can_seek() && input.is_empty() == Some(true) {
-        return Err("the input file is empty".to_string());
-    }
     parse_fastx_reader(input).map_err(|e| e.to_string())
 }
 

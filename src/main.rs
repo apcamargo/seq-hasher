@@ -102,22 +102,11 @@ fn main() {
     let mut writer = LineWriter::new(stdout.lock());
 
     for input in cli.input {
-        let is_std = input.is_std();
         let input_display = input.to_string();
 
         let reader = match create_fasta_reader(input) {
             Ok(reader) => reader,
             Err(error_msg) => {
-                if is_std {
-                    // If stdin is invalid and it's the only input, show help and exit
-                    if input_count == 1 {
-                        Cli::command().print_help().unwrap();
-                        process::exit(0);
-                    }
-                    // If stdin is invalid but there are other inputs, skip it
-                    continue;
-                }
-                // If the error is from a file input, report and exit
                 eprintln!(
                     "Error: failed to create reader for {}: {}",
                     input_display, error_msg
