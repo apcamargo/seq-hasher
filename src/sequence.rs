@@ -1,4 +1,6 @@
 use needletail::{parser::SequenceRecord, Sequence};
+use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::num::NonZeroU8;
 
 pub fn get_record_accession(record_header: &[u8]) -> Option<&[u8]> {
@@ -26,17 +28,17 @@ impl SequenceProcessor {
         }
     }
 
-    pub fn process_sequence(&self, record: SequenceRecord) -> Vec<u8> {
-        let norm_seq = record.normalize(false).to_vec();
+    pub fn process_sequence<'a>(&self, record: &'a SequenceRecord<'a>) -> Cow<'a, [u8]> {
+        let norm_seq = record.normalize(false);
         match (self.circular_rotation, self.circular_kmers) {
-            (true, _) => self.lmsr_rotation(&norm_seq),
-            (false, true) => self.adjust_for_circular_kmers(&norm_seq),
+            (true, _) => Cow::Owned(self.lmsr_rotation(norm_seq.as_ref())),
+            (false, true) => Cow::Owned(self.adjust_for_circular_kmers(norm_seq.as_ref())),
             _ => {
-                let norm_seq_rc = norm_seq.reverse_complement();
-                if norm_seq < norm_seq_rc {
+                let norm_seq_rc = norm_seq.as_ref().reverse_complement();
+                if norm_seq.as_ref() < norm_seq_rc.as_slice() {
                     norm_seq
                 } else {
-                    norm_seq_rc
+                    Cow::Owned(norm_seq_rc)
                 }
             }
         }
@@ -50,35 +52,70 @@ impl SequenceProcessor {
         adjusted_seq
     }
 
-    fn compute_lmsr(&self, seq: &[u8]) -> Vec<u8> {
+    fn minimal_rotation_index(seq: &[u8]) -> usize {
         let seq_len = seq.len();
-        let doubled_seq: Vec<u8> = seq.iter().chain(seq.iter()).copied().collect();
-        let (mut start_idx, mut min_rotation_idx) = (0, 0);
-        while start_idx < seq_len {
-            min_rotation_idx = start_idx;
-            let (mut compare_idx, mut current_idx) = (start_idx + 1, start_idx);
-            while compare_idx < 2 * seq_len && doubled_seq[current_idx] <= doubled_seq[compare_idx]
-            {
-                current_idx = if doubled_seq[current_idx] < doubled_seq[compare_idx] {
-                    start_idx
-                } else {
-                    current_idx + 1
-                };
-                compare_idx += 1;
-            }
-            start_idx += compare_idx - current_idx;
+        if seq_len <= 1 {
+            return 0;
         }
-        doubled_seq[min_rotation_idx..min_rotation_idx + seq_len].to_vec()
+
+        let (mut left, mut right, mut offset) = (0, 1, 0);
+        while left < seq_len && right < seq_len && offset < seq_len {
+            let left_base = seq[(left + offset) % seq_len];
+            let right_base = seq[(right + offset) % seq_len];
+            match left_base.cmp(&right_base) {
+                Ordering::Equal => offset += 1,
+                Ordering::Greater => {
+                    left += offset + 1;
+                    if left <= right {
+                        left = right + 1;
+                    }
+                    offset = 0;
+                }
+                Ordering::Less => {
+                    right += offset + 1;
+                    if right <= left {
+                        right = left + 1;
+                    }
+                    offset = 0;
+                }
+            }
+        }
+
+        usize::min(left, right) % seq_len
+    }
+
+    fn compare_rotations(
+        seq: &[u8],
+        seq_start: usize,
+        other: &[u8],
+        other_start: usize,
+    ) -> Ordering {
+        for offset in 0..seq.len() {
+            let seq_base = seq[(seq_start + offset) % seq.len()];
+            let other_base = other[(other_start + offset) % other.len()];
+            let ordering = seq_base.cmp(&other_base);
+            if ordering != Ordering::Equal {
+                return ordering;
+            }
+        }
+        Ordering::Equal
+    }
+
+    fn build_rotation(seq: &[u8], start: usize) -> Vec<u8> {
+        let mut rotation = Vec::with_capacity(seq.len());
+        rotation.extend_from_slice(&seq[start..]);
+        rotation.extend_from_slice(&seq[..start]);
+        rotation
     }
 
     fn lmsr_rotation(&self, seq: &[u8]) -> Vec<u8> {
         let rc = seq.reverse_complement();
-        let lmsr_seq = self.compute_lmsr(seq);
-        let lmsr_seq_rc = self.compute_lmsr(&rc);
-        if lmsr_seq < lmsr_seq_rc {
-            lmsr_seq
+        let seq_start = Self::minimal_rotation_index(seq);
+        let rc_start = Self::minimal_rotation_index(&rc);
+        if Self::compare_rotations(seq, seq_start, &rc, rc_start) == Ordering::Less {
+            Self::build_rotation(seq, seq_start)
         } else {
-            lmsr_seq_rc
+            Self::build_rotation(&rc, rc_start)
         }
     }
 }

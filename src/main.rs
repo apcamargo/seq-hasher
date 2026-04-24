@@ -3,14 +3,14 @@ mod pipeline;
 mod sequence;
 
 use crate::hashing::SequenceHasher;
-use crate::pipeline::{create_fasta_reader, pipeline};
+use crate::pipeline::{create_fasta_reader, exit_after_flush, flush_writer_or_exit, pipeline};
 use crate::sequence::SequenceProcessor;
 use clap::{
     builder::styling::{AnsiColor, Style, Styles},
     CommandFactory, Parser,
 };
 use clio::Input;
-use std::io::{self, IsTerminal};
+use std::io::{self, IsTerminal, LineWriter};
 use std::num::NonZeroU8;
 use std::process;
 
@@ -98,6 +98,9 @@ fn main() {
         process::exit(0);
     }
 
+    let stdout = io::stdout();
+    let mut writer = LineWriter::new(stdout.lock());
+
     for input in cli.input {
         let is_std = input.is_std();
         let input_display = input.to_string();
@@ -119,9 +122,17 @@ fn main() {
                     "Error: failed to create reader for {}: {}",
                     input_display, error_msg
                 );
-                process::exit(1);
+                exit_after_flush(&mut writer, 1);
             }
         };
-        pipeline(reader, &hasher, &sequence_processor, cli.print_sequence);
+        pipeline(
+            reader,
+            &mut writer,
+            &hasher,
+            &sequence_processor,
+            cli.print_sequence,
+        );
     }
+
+    flush_writer_or_exit(&mut writer);
 }
