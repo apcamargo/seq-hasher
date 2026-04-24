@@ -52,6 +52,8 @@ jobs:
           tar -czf "$dirname.tar.gz" "$dirname"
           echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: seq-hasher-${{ matrix.build }}
           path: ${{ env.ASSET }}
+          if-no-files-found: error
