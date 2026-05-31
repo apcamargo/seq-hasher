@@ -1,6 +1,6 @@
 use bytemuck::cast_slice;
 use needletail::Sequence;
-use nthash::NtHashIterator;
+use nthash_rs::NtHash;
 use std::num::NonZeroU8;
 use twox_hash::{XxHash3_128, XxHash3_64};
 
@@ -37,9 +37,12 @@ impl SequenceHasher {
     }
 
     fn collect_nthash_kmer_hashes(seq: &[u8], k: NonZeroU8) -> Result<Vec<u64>, String> {
-        let mut hashes: Vec<u64> = NtHashIterator::new(seq, usize::from(k.get()))
-            .map_err(|e| format!("Error: {e}"))?
-            .collect();
+        let mut nthash =
+            NtHash::new(seq, u16::from(k.get()), 1, 0).map_err(|e| format!("Error: {e}"))?;
+        let mut hashes = Vec::new();
+        while nthash.roll() {
+            hashes.push(nthash.hashes()[0]);
+        }
         hashes.sort_unstable();
         Ok(hashes)
     }

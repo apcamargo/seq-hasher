@@ -16,7 +16,7 @@ clio = { version = "0.3.5", features = ["clap-parse"] }
 hex = "0.4.3"
 itertools = "0.13.0"
 needletail = "0.6.1"
-nthash = "0.5.1"
+nthash-rs = "0.1.3"
 twox-hash = {
   version = "2.1.2",
   default-features = false,
