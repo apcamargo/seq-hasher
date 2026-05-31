@@ -1,8 +1,7 @@
 use needletail::Sequence;
 use nthash::NtHashIterator;
-use std::hash::Hasher;
 use std::num::NonZeroU8;
-use twox_hash::xxh3::{hash64, Hash128, HasherExt};
+use twox_hash::{XxHash3_128, XxHash3_64};
 
 pub struct SequenceHasher {
     pub multi_kmer_hashing: bool,
@@ -48,7 +47,7 @@ impl SequenceHasher {
         let rc = seq.reverse_complement();
         let mut hashes: Vec<u64> = seq
             .canonical_kmers(k.get(), &rc)
-            .map(|(_, kmer, _)| hash64(kmer))
+            .map(|(_, kmer, _)| XxHash3_64::oneshot(kmer))
             .collect();
         hashes.sort_unstable();
         hashes
@@ -57,16 +56,16 @@ impl SequenceHasher {
     fn combine_kmer_hashes(kmer_hashes: Vec<u64>) -> u128 {
         kmer_hashes
             .into_iter()
-            .fold(Hash128::default(), |mut acc, hash| {
-                acc.write_u64(hash);
+            .fold(XxHash3_128::default(), |mut acc, hash| {
+                acc.write(&hash.to_ne_bytes());
                 acc
             })
-            .finish_ext()
+            .finish_128()
     }
 
     fn compute_sequence_hash_single_kmer(seq: &[u8]) -> u128 {
-        let mut hasher = Hash128::default();
+        let mut hasher = XxHash3_128::default();
         hasher.write(seq);
-        hasher.finish_ext()
+        hasher.finish_128()
     }
 }
