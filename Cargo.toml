@@ -1,7 +1,7 @@
 [package]
 name = "seq-hasher"
-version = "0.3.0"
-authors = [ "Antonio Camargo" ]
+version = "0.4.0"
+authors = ["Antonio Camargo"]
 edition = "2021"
 description = "Compute hash digests for sequences in a FASTA file"
 readme = "README.md"
