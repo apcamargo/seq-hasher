@@ -60,8 +60,18 @@ impl SequenceProcessor {
 
         let (mut left, mut right, mut offset) = (0, 1, 0);
         while left < seq_len && right < seq_len && offset < seq_len {
-            let left_base = seq[(left + offset) % seq_len];
-            let right_base = seq[(right + offset) % seq_len];
+            let li = left + offset;
+            let ri = right + offset;
+            let left_base = if li < seq_len {
+                seq[li]
+            } else {
+                seq[li - seq_len]
+            };
+            let right_base = if ri < seq_len {
+                seq[ri]
+            } else {
+                seq[ri - seq_len]
+            };
             match left_base.cmp(&right_base) {
                 Ordering::Equal => offset += 1,
                 Ordering::Greater => {
@@ -81,7 +91,7 @@ impl SequenceProcessor {
             }
         }
 
-        usize::min(left, right) % seq_len
+        usize::min(left, right)
     }
 
     fn compare_rotations(
@@ -90,9 +100,21 @@ impl SequenceProcessor {
         other: &[u8],
         other_start: usize,
     ) -> Ordering {
-        for offset in 0..seq.len() {
-            let seq_base = seq[(seq_start + offset) % seq.len()];
-            let other_base = other[(other_start + offset) % other.len()];
+        let seq_len = seq.len();
+        let other_len = other.len();
+        for offset in 0..seq_len {
+            let seq_idx = seq_start + offset;
+            let other_idx = other_start + offset;
+            let seq_base = if seq_idx < seq_len {
+                seq[seq_idx]
+            } else {
+                seq[seq_idx - seq_len]
+            };
+            let other_base = if other_idx < other_len {
+                other[other_idx]
+            } else {
+                other[other_idx - other_len]
+            };
             let ordering = seq_base.cmp(&other_base);
             if ordering != Ordering::Equal {
                 return ordering;
