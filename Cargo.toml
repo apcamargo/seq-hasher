@@ -10,14 +10,19 @@ repository = "https://github.com/apcamargo/seq-hasher"
 license = "MIT"
 
 [dependencies]
+bytemuck = "1.25.0"
 clap = { version = "4.5.17", features = ["derive", "wrap_help"] }
 clio = { version = "0.3.5", features = ["clap-parse"] }
 hex = "0.4.3"
 itertools = "0.13.0"
 needletail = "0.6.1"
 nthash = "0.5.1"
-twox-hash = { version = "2.1.2", default-features = false, features = [
+twox-hash = {
+  version = "2.1.2",
+  default-features = false,
+  features = [
+    "std",
     "xxhash3_64",
     "xxhash3_128",
-    "std",
-] }
+  ]
+}

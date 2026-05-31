@@ -1,3 +1,4 @@
+use bytemuck::cast_slice;
 use needletail::Sequence;
 use nthash::NtHashIterator;
 use std::num::NonZeroU8;
@@ -54,13 +55,7 @@ impl SequenceHasher {
     }
 
     fn combine_kmer_hashes(kmer_hashes: Vec<u64>) -> u128 {
-        kmer_hashes
-            .into_iter()
-            .fold(XxHash3_128::default(), |mut acc, hash| {
-                acc.write(&hash.to_ne_bytes());
-                acc
-            })
-            .finish_128()
+        XxHash3_128::oneshot(cast_slice(&kmer_hashes))
     }
 
     fn compute_sequence_hash_single_kmer(seq: &[u8]) -> u128 {
