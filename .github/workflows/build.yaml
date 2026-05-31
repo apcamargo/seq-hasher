@@ -37,9 +37,9 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - name: Build
-        uses: clechasseur/rs-cargo@v2
+        uses: clechasseur/rs-cargo@v5.0.5
         with:
-          use-cross: true
+          tool: cross
           command: build
           args: --verbose --release --target ${{ matrix.target }}
       - name: Build archive
