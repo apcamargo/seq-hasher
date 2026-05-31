@@ -64,8 +64,6 @@ impl SequenceHasher {
     }
 
     fn compute_sequence_hash_single_kmer(seq: &[u8]) -> u128 {
-        let mut hasher = XxHash3_128::default();
-        hasher.write(seq);
-        hasher.finish_128()
+        XxHash3_128::oneshot(seq)
     }
 }
