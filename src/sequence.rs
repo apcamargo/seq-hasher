@@ -52,6 +52,17 @@ impl SequenceProcessor {
         adjusted_seq
     }
 
+    #[inline]
+    fn circular_index(index: usize, len: usize) -> usize {
+        debug_assert!(len > 0);
+        if index < len {
+            index
+        } else {
+            debug_assert!(index - len < len);
+            index - len
+        }
+    }
+
     fn minimal_rotation_index(seq: &[u8]) -> usize {
         let seq_len = seq.len();
         if seq_len <= 1 {
@@ -60,18 +71,8 @@ impl SequenceProcessor {
 
         let (mut left, mut right, mut offset) = (0, 1, 0);
         while left < seq_len && right < seq_len && offset < seq_len {
-            let li = left + offset;
-            let ri = right + offset;
-            let left_base = if li < seq_len {
-                seq[li]
-            } else {
-                seq[li - seq_len]
-            };
-            let right_base = if ri < seq_len {
-                seq[ri]
-            } else {
-                seq[ri - seq_len]
-            };
+            let left_base = seq[Self::circular_index(left + offset, seq_len)];
+            let right_base = seq[Self::circular_index(right + offset, seq_len)];
             match left_base.cmp(&right_base) {
                 Ordering::Equal => offset += 1,
                 Ordering::Greater => {
@@ -100,21 +101,11 @@ impl SequenceProcessor {
         other: &[u8],
         other_start: usize,
     ) -> Ordering {
-        let seq_len = seq.len();
-        let other_len = other.len();
-        for offset in 0..seq_len {
-            let seq_idx = seq_start + offset;
-            let other_idx = other_start + offset;
-            let seq_base = if seq_idx < seq_len {
-                seq[seq_idx]
-            } else {
-                seq[seq_idx - seq_len]
-            };
-            let other_base = if other_idx < other_len {
-                other[other_idx]
-            } else {
-                other[other_idx - other_len]
-            };
+        let len = seq.len();
+        debug_assert_eq!(len, other.len());
+        for offset in 0..len {
+            let seq_base = seq[Self::circular_index(seq_start + offset, len)];
+            let other_base = other[Self::circular_index(other_start + offset, len)];
             let ordering = seq_base.cmp(&other_base);
             if ordering != Ordering::Equal {
                 return ordering;
